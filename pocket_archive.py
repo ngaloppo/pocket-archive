@@ -1,16 +1,13 @@
 import datetime
-import os
 import time
 import copy
 
 from pocketpy.auth import auth
 from pocketpy.jsonconfig import JsonConfig
-from pocketpy.pocket import retrieve
 from pocketpy.tags import add_tags
 from pocketpy.pocket import modify
 
-
-JSON_FILE = "pocket_json/1375544032.json"
+import argparse
 
 def is_old(item, last_ts):
     return int(item['time_updated']) < last_ts
@@ -48,21 +45,42 @@ def archive(credentials, uids):
     archive_action(credentials, uids, "archive")
     return
 
+
+def parse_options():
+
+    parser = argparse.ArgumentParser(description='Auto-archive Pocket items')
+    parser.add_argument('json', help='Pocket items JSON (retrieved with pocket_to_json.py')
+    parser.add_argument('--archive', action='store_true', default=False,
+                        help='Effectively archive old items')
+    parser.add_argument('--days', default=100, type=int,
+                        help='Number of days to archive')
+
+    args = parser.parse_args()
+
+    return args
+
 if __name__ == "__main__":
-    delta = datetime.timedelta(days=100)
+    args = parse_options()
+
+    delta = datetime.timedelta(days=args.days)
     last_ts = long(time.mktime((datetime.datetime.now() - delta).timetuple()))
 
     # get old item ids from json
-    jc = JsonConfig(JSON_FILE)
+    jc = JsonConfig(args.json)
     items = jc.read()
     old_item_uids = get_old_items(items, last_ts)
 
-    # tag old items, and archive
-    config = auth({})
-    credentials = copy.deepcopy(config)
-    add_tags(credentials, old_item_uids, ["old-unread"])
-    print "Tagged %d articles" % len(old_item_uids)
+    print "Found {} old items out of {} in the Pocket reading list...".format(len(old_item_uids), len(items))
 
-    credentials = copy.deepcopy(config)
-    archive(credentials, old_item_uids)
+    if args.archive:
+        # tag old items, and archive
+        print "Tagging %d articles..." % len(old_item_uids)
+        config = auth({})
+        credentials = copy.deepcopy(config)
+        add_tags(credentials, old_item_uids, ["old-unread"])
 
+        print "Archiving %d articles" % len(old_item_uids)
+        credentials = copy.deepcopy(config)
+        archive(credentials, old_item_uids)
+    else:
+        print "Use --archive to effectively archive these items"
