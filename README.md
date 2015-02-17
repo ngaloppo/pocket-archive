@@ -33,7 +33,7 @@ python pocket_archive.py --days <num_days> <timestamp>.json
 ```
 Finally, effectively archive by passing the `--archive` option: 
 ```
-python pocket_archive.py --days <num_days> <timestamp>.json
+python pocket_archive.py --days <num_days> <timestamp>.json --archive
 ```
 Note that all auto-archived items will be tagged with the _old-unread_ tag.
 
